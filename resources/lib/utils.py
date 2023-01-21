@@ -183,3 +183,15 @@ def _install_addon(addonid):
     except RuntimeError:
         Script.log('{addon} add-on not installed.'.format(addon=addonid))
         return False
+
+def quality_to_enum(quality_str):
+    """Converts quality into a numeric value. Ensure to check for bounds before using."""
+    mapping = {
+        'Best': 3,
+        'Low': 0,
+        'Medium': 1,
+        'High': 2
+    }
+    if quality_str in mapping:
+        return mapping[quality_str]
+    return 0
