@@ -199,10 +199,10 @@ def _install_addon(addonid):
 def quality_to_enum(quality_str, arr_len):
     """Converts quality into a numeric value. Max clips to fall within valid bounds."""
     mapping = {
-        'Best': 3,
+        'Best': arr_len-1,
         'Low': 0,
-        'Medium': 1,
-        'High': 2
+        'Medium': max(1, arr_len-3),
+        'High': max(2, arr_len-2)
     }
     if quality_str in mapping:
         return min(mapping[quality_str], arr_len-1)
