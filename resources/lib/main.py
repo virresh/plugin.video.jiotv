@@ -13,8 +13,8 @@ from codequick.script import Settings
 from codequick.storage import PersistentDict
 
 # add-on imports
-from resources.lib.utils import getTokenParams, getHeaders, isLoggedIn, login as ULogin, logout as ULogout, check_addon, sendOTPV2, get_local_ip, getChannelHeaders, quality_to_enum, _setup, kodi_rpc, Monitor, busy
-from resources.lib.constants import GET_CHANNEL_URL, FEATURED_SRC, CHANNELS_SRC, IMG_CATCHUP, PLAY_URL, IMG_CATCHUP_SHOWS, CATCHUP_SRC, M3U_SRC, EPG_SRC, M3U_CHANNEL, DICTIONARY_URL, IMG_CONFIG, EPG_PATH
+from resources.lib.utils import getTokenParams, getHeaders, isLoggedIn, login as ULogin, logout as ULogout, check_addon, sendOTPV2, get_local_ip, getChannelHeaders, quality_to_enum, _setup, kodi_rpc, Monitor, getCachedChannels, getCachedDictionary, cleanLocalCache, getFeatured
+from resources.lib.constants import GET_CHANNEL_URL, IMG_CATCHUP, PLAY_URL, IMG_CATCHUP_SHOWS, CATCHUP_SRC, M3U_SRC, EPG_SRC, M3U_CHANNEL, IMG_CONFIG, EPG_PATH
 
 # additional imports
 import urlquick
@@ -62,13 +62,7 @@ def root(plugin):
 # Shows Featured Content
 @Route.register
 def show_featured(plugin, id=None):
-    resp = urlquick.get(FEATURED_SRC, headers={
-        "usergroup": "tvYR7NSNn7rymo3F",
-        "os": "android",
-        "devicetype": "phone",
-        "versionCode": "290"
-    }, max_age=-1).json()
-    for each in resp.get("featuredNewData", []):
+    for each in getFeatured():
         if id:
             if int(each.get("id", 0)) == int(id):
                 data = each.get("data", [])
@@ -140,8 +134,7 @@ def show_featured(plugin, id=None):
 # Shows Filter options
 @Route.register
 def show_listby(plugin, by):
-    r = urlquick.get(DICTIONARY_URL).text.encode('utf8')[3:].decode('utf8')
-    dictionary = json.loads(r)
+    dictionary = getCachedDictionary()
     GENRE_MAP = dictionary.get("channelCategoryMapping")
     LANG_MAP = dictionary.get("languageIdMapping")
     langValues = list(LANG_MAP.values())
@@ -168,9 +161,8 @@ def show_listby(plugin, by):
 # Shows channels by selected filter/category
 @Route.register
 def show_category(plugin, categoryOrLang, by):
-    resp = urlquick.get(CHANNELS_SRC).json().get("result")
-    r = urlquick.get(DICTIONARY_URL).text.encode('utf8')[3:].decode('utf8')
-    dictionary = json.loads(r)
+    resp = getCachedChannels()
+    dictionary = getCachedDictionary()
     GENRE_MAP = dictionary.get("channelCategoryMapping")
     LANG_MAP = dictionary.get("languageIdMapping")
 
@@ -214,7 +206,7 @@ def show_category(plugin, categoryOrLang, by):
 def show_epg(plugin, day, channel_id):
     resp = urlquick.get(CATCHUP_SRC.format(day, channel_id), max_age=-1).json()
     epg = sorted(
-        resp['epg'], key=lambda show: show['startEpoch'], reverse=True)
+        resp['epg'], key=lambda show: show['startEpoch'], reverse=False)
     livetext = '[COLOR red] [ LIVE ] [/COLOR]'
     for each in epg:
         current_epoch = int(time()*1000)
@@ -307,78 +299,87 @@ def play(plugin, channel_id, showtime=None, srno=None, programId=None, begin=Non
     # Script.notify("srno", srno)
     # Script.notify("showtime", showtime)
     # Script.notify("channel_id", channel_id)
-    is_helper = inputstreamhelper.Helper("mpd", drm="com.widevine.alpha")
-    hasIs = is_helper.check_inputstream()
-    if not hasIs:
-        return
-    rjson = {
-        "channel_id": int(channel_id),
-        "stream_type": "Seek"
-    }
-    isCatchup = False
-    if showtime and srno:
-        isCatchup = True
-        rjson["showtime"] = showtime
-        rjson["srno"] = srno
-        rjson["stream_type"] = "Catchup"
-        rjson["programId"] = programId
-        rjson["begin"] = begin
-        rjson["end"] = end
-        Script.log(str(rjson), lvl=Script.INFO)
-    headers = getHeaders()
-    headers['channelid'] = str(channel_id)
-    headers['srno'] = str(uuid4()) if "srno" not in rjson else rjson["srno"]
-    res = urlquick.post(GET_CHANNEL_URL, json=rjson,
-                        headers=getChannelHeaders(), max_age=-1)
-    resp = res.json()
-    art = {}
-    onlyUrl = resp.get("result", "").split("?")[0].split('/')[-1]
-    art["thumb"] = art["icon"] = IMG_CATCHUP + \
-        onlyUrl.replace(".m3u8", ".png")
-    cookie = "__hdnea__"+resp.get("result", "").split("__hdnea__")[-1]
-    headers['cookie'] = cookie
-    uriToUse = resp.get("result", "")
-    qltyopt = Settings.get_string("quality")
-    selectionType = "adaptive"
-    if qltyopt == 'Manual':
-        selectionType = "ask-quality"
-    else:
-        m3u8Headers = {}
-        m3u8Headers['user-agent'] = headers['user-agent']
-        m3u8Headers['cookie'] = cookie
-        m3u8Res = urlquick.get(uriToUse, headers=m3u8Headers,
-                               max_age=-1, raise_for_status=True)
-        # Script.notify("m3u8url", m3u8Res.status_code)
-        m3u8String = m3u8Res.text
-        variant_m3u8 = m3u8.loads(m3u8String)
-        if variant_m3u8.is_variant and (variant_m3u8.version is None or variant_m3u8.version < 7):
-            quality = quality_to_enum(qltyopt, len(variant_m3u8.playlists))
-            if isCatchup:
-                tmpurl = variant_m3u8.playlists[quality].uri
-                if "?" in tmpurl:
-                    uriToUse = uriToUse.split("?")[0].replace(onlyUrl, tmpurl)
-                else:
-                    uriToUse = uriToUse.replace(onlyUrl, tmpurl.split("?")[0])
-                del headers['cookie']
-            else:
-                uriToUse = uriToUse.replace(
-                    onlyUrl, variant_m3u8.playlists[quality].uri)
-    Script.log(uriToUse, lvl=Script.INFO)
-    return Listitem().from_dict(**{
-        "label": plugin._title,
-        "art": art,
-        "callback": uriToUse,
-        "properties": {
-            "IsPlayable": True,
-            "inputstream": "inputstream.adaptive",
-            'inputstream.adaptive.stream_selection_type': selectionType,
-            "inputstream.adaptive.chooser_resolution_secure_max": "4K",
-            "inputstream.adaptive.stream_headers": urlencode(headers),
-            "inputstream.adaptive.manifest_type": "hls",
-            "inputstream.adaptive.license_key": "|" + urlencode(headers) + "|R{SSM}|",
+    try:
+        is_helper = inputstreamhelper.Helper("mpd", drm="com.widevine.alpha")
+        hasIs = is_helper.check_inputstream()
+        if not hasIs:
+            return
+        rjson = {
+            "channel_id": int(channel_id),
+            "stream_type": "Seek"
         }
-    })
-
+        isCatchup = False
+        if showtime and srno:
+            isCatchup = True
+            rjson["showtime"] = showtime
+            rjson["srno"] = srno
+            rjson["stream_type"] = "Catchup"
+            rjson["programId"] = programId
+            rjson["begin"] = begin
+            rjson["end"] = end
+            Script.log(str(rjson), lvl=Script.INFO)
+        headers = getHeaders()
+        headers['channelid'] = str(channel_id)
+        headers['srno'] = str(
+            uuid4()) if "srno" not in rjson else rjson["srno"]
+        res = urlquick.post(GET_CHANNEL_URL, json=rjson,
+                            headers=getChannelHeaders(), max_age=-1,  raise_for_status=True)
+        # if res.status_code
+        resp = res.json()
+        art = {}
+        onlyUrl = resp.get("result", "").split("?")[0].split('/')[-1]
+        art["thumb"] = art["icon"] = IMG_CATCHUP + \
+            onlyUrl.replace(".m3u8", ".png")
+        cookie = "__hdnea__"+resp.get("result", "").split("__hdnea__")[-1]
+        headers['cookie'] = cookie
+        uriToUse = resp.get("result", "")
+        qltyopt = Settings.get_string("quality")
+        selectionType = "adaptive"
+        if qltyopt == 'Manual':
+            selectionType = "ask-quality"
+        else:
+            m3u8Headers = {}
+            m3u8Headers['user-agent'] = headers['user-agent']
+            m3u8Headers['cookie'] = cookie
+            m3u8Res = urlquick.get(uriToUse, headers=m3u8Headers,
+                                   max_age=-1, raise_for_status=True)
+            # Script.notify("m3u8url", m3u8Res.status_code)
+            m3u8String = m3u8Res.text
+            variant_m3u8 = m3u8.loads(m3u8String)
+            if variant_m3u8.is_variant and (variant_m3u8.version is None or variant_m3u8.version < 7):
+                quality = quality_to_enum(qltyopt, len(variant_m3u8.playlists))
+                if isCatchup:
+                    tmpurl = variant_m3u8.playlists[quality].uri
+                    if "?" in tmpurl:
+                        uriToUse = uriToUse.split(
+                            "?")[0].replace(onlyUrl, tmpurl)
+                    else:
+                        uriToUse = uriToUse.replace(
+                            onlyUrl, tmpurl.split("?")[0])
+                    del headers['cookie']
+                else:
+                    uriToUse = uriToUse.replace(
+                        onlyUrl, variant_m3u8.playlists[quality].uri)
+        Script.log(uriToUse, lvl=Script.INFO)
+        return Listitem().from_dict(**{
+            "label": plugin._title,
+            "art": art,
+            "callback": uriToUse,
+            "properties": {
+                "IsPlayable": True,
+                "inputstream": "inputstream.adaptive",
+                'inputstream.adaptive.stream_selection_type': selectionType,
+                "inputstream.adaptive.chooser_resolution_secure_max": "4K",
+                "inputstream.adaptive.manifest_headers": urlencode(headers),
+                "inputstream.adaptive.manifest_type": "hls",
+                "inputstream.adaptive.license_key": "|" + urlencode(headers) + "|R{SSM}|",
+            }
+        })
+    except Exception as e:
+        Script.notify("Login Error", "Session expired. Please login again")
+        executebuiltin(
+            "RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/login/)")
+        return False
 
 # Login `route` to access from Settings
 @Script.register
@@ -453,9 +454,8 @@ def logout(plugin):
 # M3u Generate `route`
 @Script.register
 def m3ugen(plugin, notify="yes"):
-    channels = urlquick.get(CHANNELS_SRC).json().get("result")
-    r = urlquick.get(DICTIONARY_URL).text.encode('utf8')[3:].decode('utf8')
-    dictionary = json.loads(r)
+    channels = getCachedChannels()
+    dictionary = getCachedDictionary()
     GENRE_MAP = dictionary.get("channelCategoryMapping")
     LANG_MAP = dictionary.get("languageIdMapping")
 
@@ -579,14 +579,17 @@ def pvrsetup(plugin):
         set_setting("m3uPath", M3U_SRC)
         set_setting("epgPathType", "1")
         set_setting("epgUrl", EPG_SRC)
+        set_setting("epgCache", "false")
+        set_setting("useInputstreamAdaptiveforHls", "true")
         set_setting("catchupEnabled", "true")
         set_setting("catchupWatchEpgBeginBufferMins", "0")
         set_setting("catchupWatchEpgEndBufferMins", "0")
-    _setup(M3U_SRC, EPG_PATH)
+    _setup(M3U_SRC, EPG_SRC)
 
 
 # Cache cleanup
 @Script.register
 def cleanup(plugin):
     urlquick.cache_cleanup(-1)
+    cleanLocalCache()
     Script.notify("Cache Cleaned", "")

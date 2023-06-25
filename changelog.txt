@@ -1,3 +1,14 @@
+[- 2.3.3 -]
+[added] updated epg url
+[added] set epg cache to false
+[added] updset useInputstreamAdaptiveforHls to true
+
+[- 2.3.2 -]
+[added] generate playlist is off by default
+
+[- 2.3.1 -]
+[added] caching of reponses
+
 [- 2.3.0 -]
 [added] more extra channels
 [added] inputstream adaptive as a dependency 
