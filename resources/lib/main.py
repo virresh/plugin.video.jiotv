@@ -14,7 +14,7 @@ from codequick.storage import PersistentDict
 
 # add-on imports
 from resources.lib.utils import getTokenParams, getHeaders, isLoggedIn, login as ULogin, logout as ULogout, check_addon, sendOTPV2, get_local_ip, getChannelHeaders, quality_to_enum, _setup, kodi_rpc, Monitor, getCachedChannels, getCachedDictionary, cleanLocalCache, getFeatured
-from resources.lib.constants import GET_CHANNEL_URL, IMG_CATCHUP, PLAY_URL, IMG_CATCHUP_SHOWS, CATCHUP_SRC, M3U_SRC, EPG_SRC, M3U_CHANNEL, IMG_CONFIG, EPG_PATH
+from resources.lib.constants import GET_CHANNEL_URL, IMG_CATCHUP, PLAY_URL, IMG_CATCHUP_SHOWS, CATCHUP_SRC, M3U_SRC, EPG_SRC, M3U_CHANNEL, IMG_CONFIG, EPG_PATH, ADDON, ADDON_ID
 
 # additional imports
 import urlquick
@@ -158,7 +158,30 @@ def show_listby(plugin, by):
         })
 
 
+def is_lang_allowed(langId, langMap):
+    if langId in langMap.keys():
+        return Settings.get_boolean(langMap[langId])
+    else:
+        return Settings.get_boolean("Extra")
+
+
+def is_genre_allowed(id, map):
+    if id in map.keys():
+        return Settings.get_boolean(map[id])
+    else:
+        return False
+
+
+def isPlayAbleLang(each, LANG_MAP):
+    return not each.get("channelIdForRedirect") and is_lang_allowed(str(each.get("channelLanguageId")), LANG_MAP)
+
+
+def isPlayAbleGenre(each, GENRE_MAP):
+    return not each.get("channelIdForRedirect") and is_genre_allowed(str(each.get("channelCategoryId")), GENRE_MAP)
+
 # Shows channels by selected filter/category
+
+
 @Route.register
 def show_category(plugin, categoryOrLang, by):
     resp = getCachedChannels()
@@ -169,39 +192,52 @@ def show_category(plugin, categoryOrLang, by):
     def fltr(x):
         fby = by.lower()[:-1]
         if fby == "genre":
-            return GENRE_MAP[str(x.get("channelCategoryId"))] == categoryOrLang
+            return GENRE_MAP[str(x.get("channelCategoryId"))] == categoryOrLang and isPlayAbleLang(x, LANG_MAP)
         else:
             if (categoryOrLang == 'Extra'):
-                return str(x.get("channelLanguageId")) not in LANG_MAP.keys()
+                return str(x.get("channelLanguageId")) not in LANG_MAP.keys() and isPlayAbleGenre(x, GENRE_MAP)
             else:
                 if (str(x.get("channelLanguageId")) not in LANG_MAP.keys()):
                     return False
-                return LANG_MAP[str(x.get("channelLanguageId"))] == categoryOrLang
-
-    for each in filter(fltr, resp):
-        if each.get("channelIdForRedirect"):
-            continue
-        litm = Listitem.from_dict(**{
-            "label": each.get("channel_name"),
-            "art": {
-                "thumb": IMG_CATCHUP + each.get("logoUrl"),
-                "icon": IMG_CATCHUP + each.get("logoUrl"),
-                "fanart": IMG_CATCHUP + each.get("logoUrl"),
-                "clearlogo": IMG_CATCHUP + each.get("logoUrl"),
-                "clearart": IMG_CATCHUP + each.get("logoUrl"),
-            },
-            "callback": play,
-            "params": {
-                "channel_id": each.get("channel_id")
-            }
-        })
-        if each.get("isCatchupAvailable"):
-            litm.context.container(show_epg, "Catchup",
-                                   0, each.get("channel_id"))
-        yield litm
-
+                return LANG_MAP[str(x.get("channelLanguageId"))] == categoryOrLang and isPlayAbleGenre(x, GENRE_MAP)
+    try:
+        flist = list(filter(fltr, resp))
+        if len(flist) < 1:
+            yield Listitem.from_dict(**{
+                "label": "No Results Found, Go Back",
+                "callback": show_listby,
+                "params": {
+                    "by": by
+                }
+            })
+        else:
+            for each in flist:
+                litm = Listitem.from_dict(**{
+                    "label": each.get("channel_name"),
+                    "art": {
+                        "thumb": IMG_CATCHUP + each.get("logoUrl"),
+                        "icon": IMG_CATCHUP + each.get("logoUrl"),
+                        "fanart": IMG_CATCHUP + each.get("logoUrl"),
+                        "clearlogo": IMG_CATCHUP + each.get("logoUrl"),
+                        "clearart": IMG_CATCHUP + each.get("logoUrl"),
+                    },
+                    "callback": play,
+                    "params": {
+                        "channel_id": each.get("channel_id")
+                    }
+                })
+                if each.get("isCatchupAvailable"):
+                    litm.context.container(show_epg, "Catchup",
+                                           0, each.get("channel_id"))
+                yield litm
+    except Exception as e:
+        Script.notify("Error", e)
+        monitor.waitForAbort(1)
+        return False
 
 # Shows EPG container from Context menu
+
+
 @Route.register
 def show_epg(plugin, day, channel_id):
     resp = urlquick.get(CATCHUP_SRC.format(day, channel_id), max_age=-1).json()
@@ -258,33 +294,6 @@ def show_epg(plugin, day, channel_id):
                     "channel_id": channel_id
                 }
             })
-
-
-@Resolver.register
-@isLoggedIn
-def play_ex(plugin, dt=None):
-    is_helper = inputstreamhelper.Helper(
-        dt.get("proto", "mpd"), drm=dt.get("drm"))
-    if is_helper.check_inputstream():
-        licenseUrl = dt.get("lUrl") and dt.get("lUrl").replace("{HEADERS}", urlencode(
-            getHeaders())).replace("{TOKEN}", urlencode(getTokenParams()))
-        art = {}
-        if dt.get("default_logo"):
-            art['thumb'] = art['icon'] = IMG_CATCHUP + \
-                dt.get("default_logo")
-        return Listitem().from_dict(**{
-            "label": dt.get("label") or plugin._title,
-            "art": art or None,
-            "callback": dt.get("pUrl"),
-            "properties": {
-                "IsPlayable": True,
-                "inputstream": is_helper.inputstream_addon,
-                "inputstream.adaptive.stream_headers": dt.get("hdrs"),
-                "inputstream.adaptive.manifest_type": dt.get("proto", "mpd"),
-                "inputstream.adaptive.license_type": dt.get("drm"),
-                "inputstream.adaptive.license_key": licenseUrl,
-            }
-        })
 
 
 # Play live stream/ catchup according to params.
@@ -376,12 +385,12 @@ def play(plugin, channel_id, showtime=None, srno=None, programId=None, begin=Non
             }
         })
     except Exception as e:
-        Script.notify("Login Error", "Session expired. Please login again")
-        executebuiltin(
-            "RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/login/)")
+        Script.notify("Error while playback , Check connection", e)
         return False
 
 # Login `route` to access from Settings
+
+
 @Script.register
 def login(plugin):
     method = Dialog().yesno("Login", "Select Login Method",
@@ -393,6 +402,7 @@ def login(plugin):
             mobile = Settings.get_string("mobile")
             if not mobile or (len(mobile) != 10):
                 mobile = Dialog().numeric(0, "Enter your Jio mobile number")
+                ADDON.setSetting('mobile', mobile)
             error = sendOTPV2(mobile)
             if error:
                 Script.notify("Login Error", error)
@@ -419,13 +429,11 @@ def login(plugin):
 
 @Script.register
 def setmobile(plugin):
-    ADDON_ID = 'plugin.video.jiotv'
-    addon = Addon(ADDON_ID)
     prevMobile = Settings.get_string("mobile")
     mobile = Dialog().numeric(0, "Update Jio mobile number", prevMobile)
     kodi_rpc('Addons.SetAddonEnabled', {
         'addonid': ADDON_ID, 'enabled': False})
-    addon.setSetting('mobile', mobile)
+    ADDON.setSetting('mobile', mobile)
     kodi_rpc('Addons.SetAddonEnabled', {
         'addonid': ADDON_ID, 'enabled': True})
     monitor.waitForAbort(1)
@@ -434,7 +442,6 @@ def setmobile(plugin):
 
 @Script.register
 def applyall(plugin):
-    ADDON_ID = 'plugin.video.jiotv'
     kodi_rpc('Addons.SetAddonEnabled', {
         'addonid': ADDON_ID, 'enabled': False})
     monitor.waitForAbort(1)
