@@ -207,7 +207,7 @@ def show_listby(plugin, by):
         "Languages": langValues,
     }
     for each in CONFIG[by]:
-        tvImg = (IMG_CONFIG[by].get(each, {}).get("tvImg", ""),)
+        tvImg = IMG_CONFIG[by].get(each, {}).get("tvImg", "")
         promoImg = IMG_CONFIG[by].get(each, {}).get("promoImg", "")
         yield Listitem.from_dict(
             **{
