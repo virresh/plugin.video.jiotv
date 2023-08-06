@@ -232,6 +232,16 @@ def getChannelHeaders():
     }
 
 
+def getChannelHeadersWithHost():
+    return {
+        'deviceType': 'phone',
+        'host': 'tv.media.jio.com',
+        'os': 'android',
+        'versioncode': '296',
+        'Conetent-Type': 'application/json'
+    }
+
+
 def getTokenParams():
     def magic(x): return base64.b64encode(hashlib.md5(x.encode()).digest()).decode().replace(
         '=', '').replace('+', '-').replace('/', '_').replace('\r', '').replace('\n', '')
