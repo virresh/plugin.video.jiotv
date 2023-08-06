@@ -4,7 +4,7 @@
 # Addon Provider: tobalan
 msgid ""
 msgstr ""
-"Project-Id-Version: 2.3.8\n"
+"Project-Id-Version: 2.3.9\n"
 ""
 "POT-Creation-Date: 2023-07-28 15:35+05:30\n"
 "PO-Revision-Date: 2023-07-28 15:35+05:30\n"
@@ -211,4 +211,8 @@ msgstr ""
 
 msgctxt "#33048"
 msgid "Enable the channel numbering in addon's submenus"
+msgstr ""
+
+msgctxt "#33049"
+msgid "Enable host header"
 msgstr ""

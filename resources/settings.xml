@@ -53,6 +53,11 @@
 					<default>false</default>
 					<control type="toggle"></control>
 				</setting>
+				<setting help="" id="enablehost" label="33049" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
 				<setting help="" id="usempd" label="33006" type="boolean">
 					<level>0</level>
 					<default>false</default>

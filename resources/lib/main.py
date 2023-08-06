@@ -23,6 +23,7 @@ from resources.lib.utils import (
     sendOTPV2,
     get_local_ip,
     getChannelHeaders,
+    getChannelHeadersWithHost,
     quality_to_enum,
     _setup,
     kodi_rpc,
@@ -52,7 +53,6 @@ import urlquick
 from uuid import uuid4
 from urllib.parse import urlencode
 import inputstreamhelper
-import json
 from time import time, sleep
 from datetime import datetime, timedelta, date
 import m3u8
@@ -428,11 +428,12 @@ def play(
         headers = getHeaders()
         headers["channelid"] = str(channel_id)
         headers["srno"] = str(uuid4()) if "srno" not in rjson else rjson["srno"]
+        enableHost = Settings.get_boolean("enablehost")
         res = urlquick.post(
             GET_CHANNEL_URL,
             json=rjson,
             verify=False,
-            headers=getChannelHeaders(),
+            headers=getChannelHeadersWithHost() if enableHost else getChannelHeaders(),
             max_age=-1,
             raise_for_status=True,
         )
