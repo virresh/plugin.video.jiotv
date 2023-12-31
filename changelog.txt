@@ -1,3 +1,39 @@
+[- 2.3.9 -]
+[added] Revamped settings.xml and added strings.po
+
+[- 2.3.8 -]
+[added] support to play mpd streams
+
+[- 2.3.7 -]
+[added] fix for runtime error in channel list
+
+[- 2.3.6 -]
+[added] language filter
+
+[- 2.3.5 -]
+[added] handle playback exceptions
+[added] remove unused code
+[added] save mobile no automatically on login
+[added] added request dependency for lower version
+[added] revert inputstreamhelper dependency version
+
+[- 2.3.4 -]
+[added] AAC multi-audio fix (3rd Jun 2023)
+[added] Genres selection in Settings with Languages
+[added] EPG Source URL editable in Settings
+[added] Settings sections rearranged, removed 'Welcome-donate' popup.
+
+[- 2.3.3 -]
+[added] updated epg url
+[added] set epg cache to false
+[added] updset useInputstreamAdaptiveforHls to true
+
+[- 2.3.2 -]
+[added] generate playlist is off by default
+
+[- 2.3.1 -]
+[added] caching of reponses
+
 [- 2.3.0 -]
 [added] more extra channels
 [added] inputstream adaptive as a dependency 

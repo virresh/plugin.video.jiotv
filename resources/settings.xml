@@ -1,35 +1,326 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="Account">
-        <setting id="login" type="action" label="Login" action="RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/login/)" option="close"/>
-        <setting id="logout" type="action" label="Logout" action="RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/logout/)" option="close"/>
-    </category>
-    <category label="Setup">
-        <setting label="Setup Simple IPTV PVR" type="action" id="pvrsetup" action="RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/pvrsetup/)" option="close"/>
-        <setting id="m3ugen" type="bool" label="Generate Playlist On Startup" default="true"/>
-    </category>
-    <category label="Languages">
-        <setting id="Hindi" type="bool" label="Hindi" default="true"/>
-        <setting id="English" type="bool" label="English" default="true"/>
-        <setting id="Marathi" type="bool" label="Marathi" default="true"/>
-        <setting id="Telugu" type="bool" label="Telugu" default="true"/>
-        <setting id="Kannada" type="bool" label="Kannada" default="true"/>
-        <setting id="Tamil" type="bool" label="Tamil" default="true"/>
-        <setting id="Punjabi" type="bool" label="Punjabi" default="true"/>
-        <setting id="Gujarati" type="bool" label="Gujarati" default="true"/>
-        <setting id="Bengali" type="bool" label="Bengali" default="true"/>
-        <setting id="Bhojpuri" type="bool" label="Bhojpuri" default="true"/>
-        <setting id="Malayalam" type="bool" label="Malayalam" default="true"/>
-        <setting id="Odia" type="bool" label="Odia" default="true"/>
-        <setting id="Assamese" type="bool" label="Assamese" default="true"/>
-        <setting id="Urdu" type="bool" label="Urdu" default="true"/>
-        <setting id="Nepali" type="bool" label="Nepali" default="true"/>
-    </category>
-    <category label="More">
-        <setting id="cleanup" type="action" label="Clear Cache" action="RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/cleanup/)" option="close"/>
-        <setting id="popup" type="bool" label="Disable Welcome Popup" default="false"/>
-        <setting id="extra" type="bool" label="Extra HD Channels" default="false"/>
-        <setting id="quality" type="labelenum" label="Stream Quality (Requires Restart)" values="Best|Low|Medium|High"/>
-    </category>
+<?xml version="1.0" encoding="UTF-8"?>
+<settings version="1">
+	<section id="plugin.video.jiotv">
+		<category help="" id="setup" label="33000">
+			<group id="1">
+				<setting help="" id="quality" label="33001" type="string">
+					<level>0</level>
+					<default>Best</default>
+					<constraints>
+						<options>
+							<option>Manual</option>
+							<option>Ask-me</option>
+							<option>Best</option>
+							<option>High</option>
+							<option>Medium+</option>
+							<option>Medium</option>
+							<option>Low</option>
+							<option>Lower</option>
+							<option>Lowest</option>
+						</options>
+					</constraints>
+					<control format="string" type="list">
+						<heading>33001</heading>
+					</control>
+				</setting>
+				<setting help="" id="cleanup" label="33002" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/cleanup/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting help="" id="pvrsetup" label="33003" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/pvrsetup/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting help="" id="m3ugen" label="33004" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="channelsrc" label="33005" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="enablehost" label="33049" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="usempd" label="33006" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="mpdnotice" label="33007" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+					<dependencies>
+						<dependency setting="usempd" type="enable">true</dependency>
+					</dependencies>
+				</setting>
+				<setting help="" id="number_toggle" label="33048" type="boolean">
+					<level>0</level>
+					<default>false</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="epgsource" label="33008" type="string">
+					<level>0</level>
+					<default>https://tobalan.github.io/epg.xml.gz</default>
+					<control format="string" type="edit">
+						<heading>33008</heading>
+					</control>
+				</setting>
+				<setting help="" id="applyAllSettings1" label="33009" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/applyall/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
+		<category help="" id="genres" label="33010">
+			<group id="1">
+				<setting help="" id="Entertainment" label="33011" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Lifestyle" label="33012" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Infotainment" label="33013" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Devotional" label="33014" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Jio Darshan" label="33015" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="News" label="33016" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Business News" label="33017" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Movies" label="33018" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Music" label="33019" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Educational" label="33020" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Kids" label="33021" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Shopping" label="33022" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Sports" label="33023" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="applyAllSettings3" label="33024" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/applyall/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
+		<category help="" id="languages" label="33025">
+			<group id="1">
+				<setting help="" id="Hindi" label="33026" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="English" label="33027" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Marathi" label="33028" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Telugu" label="33029" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Kannada" label="33030" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Tamil" label="33031" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Punjabi" label="33032" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Gujarati" label="33033" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Bengali" label="33034" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Bhojpuri" label="33035" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Malayalam" label="33036" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Odia" label="33037" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Assamese" label="33038" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Urdu" label="33039" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Nepali" label="33040" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="Extra" label="33041" type="boolean">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle"></control>
+				</setting>
+				<setting help="" id="applyAllSettings2" label="33042" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/applyall/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
+		<category help="" id="account" label="33043">
+			<group id="1">
+				<setting help="" id="login" label="33044" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/login/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting help="" id="logout" label="33045" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/logout/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting help="" id="setMobile" label="33046" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/setmobile/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+				<setting help="" id="mobile" label="33047" type="string">
+					<level>0</level>
+					<default></default>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="string" type="edit">
+						<heading>33047</heading>
+					</control>
+				</setting>
+				<setting help="" id="applyAllSettings0" label="33009" type="action">
+					<level>0</level>
+					<data>RunPlugin(plugin://plugin.video.jiotv/resources/lib/main/applyall/)</data>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
+					<control format="action" type="button">
+						<close>true</close>
+					</control>
+				</setting>
+			</group>
+		</category>
+	</section>
 </settings>
-
